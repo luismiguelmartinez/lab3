@@ -7,7 +7,9 @@ using namespace std;
 int processData (unsigned short *);
 void encode (string *, string *, short *, short *);
 void decode (string *, string *, short *, short *);
-void turnData (ifstream *, ofstream *, short *, short *);
+void encodeData (ifstream *, ofstream *, short *, short *);
+void decodeData (ifstream *, ofstream *, short *, short *);
+void binaryToText (string, ofstream *);
 void encodeMethodOne (string, ofstream *, short *, short *, short *, short *, bool *);
 void encodeMethodTwo (string, ofstream *, short *, short *,string);
 
@@ -49,8 +51,8 @@ int processData (unsigned short *process) {
 
     if (*process == 1)
         encode(&input, &output, &n, &method);
-//    else
-//        decode(&input, &output, &n, &method);
+    else
+        decode(&input, &output, &n, &method);
 
     return 0;
 }
@@ -68,7 +70,7 @@ void encode (string *input, string *output, short *n, short *method) {
         if (!fout.is_open())
             throw '2';
 
-        turnData (&fin, &fout, n, method);
+        encodeData (&fin, &fout, n, method);
 
         fin.close();
         fout.close();
@@ -84,7 +86,7 @@ void encode (string *input, string *output, short *n, short *method) {
     }
 }
 
-void turnData (ifstream *fin, ofstream *fout, short *n, short *method) {
+void encodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
     //variables para convertir los datos a binarios
     unsigned short aux;
     string binary;
@@ -223,181 +225,161 @@ void encodeMethodTwo (string binary, ofstream *fout, short *n, short *index, str
 }
 
 
-//void decode (string *input, string *output, short *n, short *method) {
+void decode (string *input, string *output, short *n, short *method) {
 
-//    try {
-//        ifstream fin;
-//        fin.open(*input + ".txt");
-//        if (!fin.is_open())
-//            throw '1';
+    try {
+        ifstream fin;
+        fin.open(*input + ".txt");
+        if (!fin.is_open())
+            throw '1';
 
-//        ofstream fout;
-//        fout.open("temp2.txt");
-//        if (!fout.is_open())
-//            throw '2';
+        ofstream fout;
+        fout.open(*output + ".txt");
+        if (!fout.is_open())
+            throw '2';
 
-//        decodeData (&fin, &fout, n, method);
+        decodeData (&fin, &fout, n, method);
 
-//        fin.close();
-//        fout.close();
-
-
-//        fin.open("temp2.txt");
-//        if (!fin.is_open())
-//            throw '1';
-
-//        fout.open(*output + ".txt");
-//        if (!fout.is_open())
-//            throw '2';
-
-//        binaryToText(&fin, &fout);
-
-//        fin.close();
-//        fout.close();
+        fin.close();
+        fout.close();
 
 
-//    }  catch (char c) {
-//        if (c == '1')
-//            cout << "e: Error archivo de lectura" << endl;
-//        else if (c == '2') {
-//            cout << "e: Error archivo de escritura" << endl;
-//        }
-//        else
-//            cout << "e: Error inesperado" << endl;
-//    }
-//}
+    }  catch (char c) {
+        if (c == '1')
+            cout << "e: Error archivo de lectura" << endl;
+        else if (c == '2') {
+            cout << "e: Error archivo de escritura" << endl;
+        }
+        else
+            cout << "e: Error inesperado" << endl;
+    }
+}
 
-//void decodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
+void decodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
 
-//    if (*method == 1) {
+    if (*method == 1) {
 
-//        unsigned short index = 1;
-//        bool flag = 1;
-//        unsigned short lastOnes = 0;
-//        unsigned short actualOnes = 0;
-//        char aux;
+        unsigned short index = 1;
+        bool flag = 1;
+        unsigned short lastOnes = 0;
+        unsigned short actualOnes = 0;
+        char temp;
+        string byte;
 
-//        fin->seekg(0);
+        fin->seekg(0);
 
-//        while (fin->good()) {
-//            aux = fin->get();
+        while (fin->good()) {
+            temp = fin->get();
 
-//            if (fin->good()) {
+            if (fin->good()) {
 
-//                if (flag) {
-//                    if (aux == '1') {
-//                        *fout << '0';
-//                    } else {
-//                        *fout << '1';
-//                        lastOnes++;
-//                    }
+                if (flag) {
+                    if (temp == '1') {
+                        byte += '0';
+                    } else {
+                        byte += '1';
+                        lastOnes++;
+                    }
 
 
-//                    if (++index > *n) {
-//                        flag = 0;
-//                        index = 1;
-//                    }
-//                } else {
-//                    if (lastOnes == (*n - lastOnes)) {
+                    if (++index > *n) {
+                        flag = 0;
+                        index = 1;
+                    }
+                } else {
+                    if (lastOnes == (*n - lastOnes)) {
 
-//                        if (aux == '1') {
-//                            *fout << '0';
-//                        } else {
-//                            *fout << '1';
-//                            actualOnes++;
-//                        }
+                        if (temp == '1') {
+                            byte += '0';
+                        } else {
+                            byte += '1';
+                            actualOnes++;
+                        }
 
-//                    } else if ((lastOnes > *n - lastOnes) || ((*n - lastOnes) == 0)) {
+                    } else if ((lastOnes > *n - lastOnes) || ((*n - lastOnes) == 0)) {
 
-//                        if ((index % 3) == 0) {
+                        if ((index % 3) == 0) {
 
-//                            if (aux == '1') {
-//                                *fout << '0';
-//                            } else {
-//                                *fout << '1';
-//                                actualOnes++;
-//                            }
-//                        } else {
+                            if (temp == '1') {
+                                byte += '0';
+                            } else {
+                                byte += '1';
+                                actualOnes++;
+                            }
+                        } else {
 
-//                            if (aux == '1')
-//                                actualOnes++;
+                            if (temp == '1')
+                                actualOnes++;
 
-//                            *fout << aux;
-//                        }
+                            byte += temp;
+                        }
 
-//                    } else {
+                    } else {
 
-//                        if ((index % 2) == 0) {
+                        if ((index % 2) == 0) {
 
-//                            if (aux == '1') {
-//                                *fout << '0';
-//                            } else {
-//                                *fout << '1';
-//                                actualOnes++;
-//                            }
-//                        } else {
+                            if (temp == '1') {
+                                byte += '0';
+                            } else {
+                                byte += '1';
+                                actualOnes++;
+                            }
+                        } else {
 
-//                            if (aux == '1')
-//                                actualOnes++;
+                            if (temp == '1')
+                                actualOnes++;
 
-//                            *fout << aux;
-//                        }
+                            byte += temp;
+                        }
 
-//                    }
+                    }
 
-//                    if (++index > *n) {
-//                        index = 1;
-//                        lastOnes = actualOnes;
-//                        actualOnes = 0;
-//                    }
-//                }
-//            }
-//        }
+                    if (byte.length() == 8) {
+                        binaryToText(byte, fout);
+                        byte.clear();
+                    }
 
-//    } else if (*method == 2) {
-//        int index = 0;
-//        char aux[*n + 1], temp[*n + 1];
+                    if (++index > *n) {
+                        index = 1;
+                        lastOnes = actualOnes;
+                        actualOnes = 0;
+                    }
+                }
+            }
+        }
 
-//        while (fin->good()) {
-//            aux[index] = fin->get();
+    } else if (*method == 2) {
+        int index = 0;
+        char aux[*n + 1], temp[*n + 1];
 
-//            if (fin->good()) {
+        while (fin->good()) {
+            aux[index] = fin->get();
 
-//                if (++index > (*n - 1)) {
+            if (fin->good()) {
 
-//                    temp[*n - 1] = aux[0];
-//                    for (short i = 1; i < *n; i++) {
-//                        temp[i - 1] = aux[i];
-//                    }
+                if (++index > (*n - 1)) {
 
-//                    *fout << temp;
-//                    index = 0;
-//                }
-//            }
-//        }
-//    }
-//}
+                    temp[*n - 1] = aux[0];
+                    for (short i = 1; i < *n; i++) {
+                        temp[i - 1] = aux[i];
+                    }
 
-//void binaryToText (ifstream *fin, ofstream *fout) {
-//    short aux1 = 128;
-//    short aux2 = 0;
-//    char temp;
+                    *fout << temp;
+                    index = 0;
+                }
+            }
+        }
+    }
+}
 
-//    fin->seekg(0);
+void binaryToText (string byte, ofstream *fout) {
+    short aux1 = 128;
+    short aux2 = 0;
 
-//    while (fin->good()) {
-//        temp = fin->get();
+    for (short i = 0; i < 8; i++) {
+        aux2 += aux1 * (byte[i] - 48);
+        aux1 /= 2;
+    }
 
-//        if (fin->good()) {
-
-//            aux2 += aux1 * (temp - 48);
-//            aux1 /= 2;
-
-//            if (aux1 < 1) {
-//                aux1 = 128;
-//                *fout << char(aux2);
-//                aux2 = 0;
-//            }
-//        }
-//    }
-//}
+    *fout << char(aux2);
+}
