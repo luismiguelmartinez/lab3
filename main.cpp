@@ -1,42 +1,57 @@
 #include <iostream>
-#include <string.h>
+//#include <string.h>
 #include <fstream>
 
 using namespace std;
 
-int processData (unsigned short *);
+int processData (unsigned short *, bool *);
 void encode (string *, string *, short *, short *);
 void decode (string *, string *, short *, short *);
 void encodeData (ifstream *, ofstream *, short *, short *);
 void decodeData (ifstream *, ofstream *, short *, short *);
 void binaryToText (string, ofstream *);
+void textToBinary(char *, char);
 void encodeMethodOne (string, ofstream *, short *, short *, short *, short *, bool *);
-void encodeMethodTwo (string, ofstream *, short *, short *,string);
+void encodeMethodTwo (string, ofstream *, short *, string *);
 
 int main()
 {
     unsigned short process;
+    bool exit = false;
 
-    while (1) {
-        cout << "Que desea hacer " << endl;
+    while (!exit) {
+
+        cout<<endl;
+        cout<<"|||||||||||||||||||||||||||||||||||||||||||"<<endl;
+        cout<<"|||                                     |||"<<endl;
+        cout<<"|||     CODIFICADOR Y DECODIFICADOR     |||"<<endl;
+        cout<<"|||  1. Si desea codificar un archivo   |||"<<endl;
+        cout<<"|||  2. Si desea decodificar un archivo |||"<<endl;
+        cout<<"|||  * Salir presione otra tecla        |||"<<endl;
+        cout<<"|||                                     |||"<<endl;
+        cout<<"|||||||||||||||||||||||||||||||||||||||||||"<<endl;
+        cout<<endl;
+        cout<<"Opcion: ";
+
         cin >> process;
-        processData(&process);
+
+        processData(&process, &exit);
     }
 
     return 0;
 }
 
-int processData (unsigned short *process) {
+int processData (unsigned short *process, bool *exit) {
 
     if ((*process != 1) && (*process != 2)) {
-        cout << "Proceso no valido" << endl;
+        *exit = true;
         return 0;
     }
 
     string input, output;
     short n, method;
 
-    cout << "Ingrese nombre archivo de entrada" << endl;
+    cout << endl <<"Ingrese nombre archivo de entrada" << endl;
     getline(cin, input);
     getline(cin, input);
 
@@ -77,31 +92,36 @@ void encode (string *input, string *output, short *n, short *method) {
 
     }  catch (char c) {
         if (c == '1')
-            cout << "e: Error archivo de lectura" << endl;
+            cout << "Error archivo de lectura" << endl;
         else if (c == '2') {
-            cout << "e: Error archivo de escritura" << endl;
+            cout << "Error archivo de escritura" << endl;
         }
         else
-            cout << "e: Error inesperado" << endl;
+            cout << "Error inesperado" << endl;
     }
 }
 
 void encodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
-    //variables para convertir los datos a binarios
-    unsigned short aux;
-    string binary;
+    //variable para convertir los datos a binarios
+    char binary[9];
 
-    //variables para los metodos de codificacion depende del metodo se destruyen algunas
-    short index = 1;
-    string temp;
+    //variables para los metodos de codificacion depende del metodo se destruyen algunas de ellas
+    string *buffer = new string;
+
     bool *flag = new bool(1);
+    short *index = new short(1);
     short *lastOnes = new short(0);
     short *actualOnes = new short(0);
 
     if (*method != 1) {
         delete flag;
+        delete index;
         delete lastOnes;
         delete actualOnes;
+    }
+
+    if (*method != 2) {
+        delete buffer;
     }
 
 
@@ -110,25 +130,29 @@ void encodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
 
         for (unsigned int i = 0; i <= line.length(); i++) {
 
-            binary = "00000000";
 
             if (i < line.length()) {
-                aux = line[i];
+                textToBinary(binary, line[i]);
             } else {
-                // Salto de linea
-                aux = 10;
+                textToBinary(binary, '\n');
             }
 
-            for (short j = 7; j >= 0; j--) {
-                binary[j] = (aux % 2) + 48;
-                aux /= 2;
-            }
 
             if (*method == 1)
-                encodeMethodOne(binary, fout, n, &index, lastOnes, actualOnes, flag);
+                encodeMethodOne(binary, fout, n, index, lastOnes, actualOnes, flag);
             else
-                encodeMethodTwo(binary, fout, n, &index, temp);
+                encodeMethodTwo(binary, fout, n, buffer);
         }
+    }
+
+    // se verifica que en el metodo 2 no hayan queado bit restantes sin procesar
+    if ((buffer->length() > 0) && (*method == 2)) {
+
+        string aux;
+        aux = buffer->substr(buffer->length() - 1);
+        aux += buffer->substr(0, buffer->length() - 1);
+
+        *fout << aux;
     }
 }
 
@@ -202,25 +226,20 @@ void encodeMethodOne (string binary, ofstream *fout, short *n, short *index, sho
     }
 }
 
-void encodeMethodTwo (string binary, ofstream *fout, short *n, short *index, string temp) {
+void encodeMethodTwo (string binary, ofstream *fout, short *n, string *buffer) {
 
-    char aux[*n + 1];
+    string aux;
 
-    for (short i = 0; i < 8; i++) {
+    *buffer += binary;
 
-        temp += binary[i];
+    while (buffer->length() >= unsigned(*n)) {
 
-        if (++(*index) > *n) {
+        aux = buffer->substr(*n - 1, 1);
+        aux += buffer->substr(0, *n - 1);
 
-            aux[0] = temp[*n - 1];
-            for (short j = 1; j < *n; j++) {
-                aux[j] = temp[j - 1];
-            }
-
-            *fout << aux;
-            *index = 1;
-            temp.clear();
-        }
+        *fout << aux;
+        aux.clear();
+        *buffer = buffer->substr(*n);
     }
 }
 
@@ -246,12 +265,12 @@ void decode (string *input, string *output, short *n, short *method) {
 
     }  catch (char c) {
         if (c == '1')
-            cout << "e: Error archivo de lectura" << endl;
+            cout << "Error archivo de lectura" << endl;
         else if (c == '2') {
-            cout << "e: Error archivo de escritura" << endl;
+            cout << "Error archivo de escritura" << endl;
         }
         else
-            cout << "e: Error inesperado" << endl;
+            cout << "Error inesperado" << endl;
     }
 }
 
@@ -349,25 +368,34 @@ void decodeData (ifstream *fin, ofstream *fout, short *n, short *method) {
         }
 
     } else if (*method == 2) {
-        int index = 0;
-        char aux[*n + 1], temp[*n + 1];
+
+        string aux, buffer;
 
         while (fin->good()) {
-            aux[index] = fin->get();
+            aux += fin->get();
 
             if (fin->good()) {
 
-                if (++index > (*n - 1)) {
+                if (aux.length() == unsigned(*n)) {
 
-                    temp[*n - 1] = aux[0];
-                    for (short i = 1; i < *n; i++) {
-                        temp[i - 1] = aux[i];
+                    buffer += aux.substr(1);
+                    buffer += aux.substr(0, 1);
+
+                    aux.clear();
+
+                    while (buffer.length() >= 8) {
+                        binaryToText(buffer, fout);
+                        buffer = buffer.substr(8);
                     }
-
-                    *fout << temp;
-                    index = 0;
                 }
             }
+        }
+
+        if (aux.length() > 1) {
+
+            buffer += aux.substr(1, aux.length() - 2);
+            buffer += aux.substr(0, 1);
+            binaryToText(buffer, fout);
         }
     }
 }
@@ -382,4 +410,12 @@ void binaryToText (string byte, ofstream *fout) {
     }
 
     *fout << char(aux2);
+}
+
+void textToBinary (char *binary, char character) {
+
+    for (short j = 7; j >= 0; j--) {
+        *(binary + j) = (character % 2) + 48;
+        character /= 2;
+    }
 }
